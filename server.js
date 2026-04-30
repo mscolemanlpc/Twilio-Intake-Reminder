@@ -62,6 +62,18 @@ app.post('/add-client', (req, res) => {
   res.json({ success: true, message: `Reminder sequence started for ${name}.` });
 });
 
+app.post('/incoming', (req, res) => {
+  const incomingBody = (req.body.Body || '').trim().toUpperCase();
+  if (incomingBody === 'STOP' || incomingBody === 'UNSTOP' || incomingBody === 'HELP') {
+    return res.set('Content-Type', 'text/xml').send('<Response></Response>');
+  }
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Message>This number is for outbound notifications only and is not monitored. Please contact the office from your client portal for assistance.</Message>
+</Response>`;
+  res.set('Content-Type', 'text/xml').send(twiml);
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
