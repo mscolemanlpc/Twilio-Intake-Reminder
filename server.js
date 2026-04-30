@@ -12,15 +12,15 @@ const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TO
 const MESSAGES = [
   {
     delayMs: 0,
-    text: "Thanks for requesting an appointment with Michelle Coleman, LPC. To confirm your appointment, please (1) accept the invitation to the client portal and (2) complete the intake forms within the next 12 hours to prevent cancellation."
+    text: "Thanks for requesting an appointment with Michelle Coleman, LPC. To confirm your appointment, please respond to the email that was sent to the email address you provided. From the email, 1) accept the invitation to the client portal and 2) complete the intake forms within the next 12 hours to prevent cancellation."
   },
   {
     delayMs: 4 * 60 * 60 * 1000,
-    text: "Thanks for requesting an appointment with Michelle Coleman, LPC. To confirm your appointment, please (1) accept the invitation to the client portal and (2) complete the intake forms within the next 8 hours to prevent cancellation."
+    text: "Thanks for requesting an appointment with Michelle Coleman, LPC. To confirm your appointment, please respond to the email that was sent to the email address you provided. From the email, 1) accept the invitation to the client portal and 2) complete the intake forms within the next 8 hours to prevent cancellation."
   },
   {
     delayMs: 8 * 60 * 60 * 1000,
-    text: "Thanks for requesting an appointment with Michelle Coleman, LPC. To confirm your appointment, please (1) accept the invitation to the client portal and (2) complete the intake forms within the next 4 hours to prevent cancellation."
+    text: "Thanks for requesting an appointment with Michelle Coleman, LPC. To confirm your appointment, please respond to the email that was sent to the email address you provided. From the email, 1) accept the invitation to the client portal and 2) complete the intake forms within the next 4 hours to prevent cancellation."
   }
 ];
 
