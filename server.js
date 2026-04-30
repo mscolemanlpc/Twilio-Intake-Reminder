@@ -5,6 +5,7 @@ const path = require('path');
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'));
 
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
@@ -24,6 +25,9 @@ const MESSAGES = [
   }
 ];
 
+// Store active clients and their timers in memory
+const activeClients = {};
+
 async function sendMessage(to, body) {
   await client.messages.create({
     messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
@@ -34,17 +38,29 @@ async function sendMessage(to, body) {
 
 function scheduleReminders(name, phone) {
   console.log(`Scheduling reminders for ${name} (${phone})`);
+  const key = phone.replace(/\D/g, '');
+  const timers = [];
 
   MESSAGES.forEach((msg, index) => {
-    setTimeout(async () => {
+    const timer = setTimeout(async () => {
+      if (!activeClients[key]) {
+        console.log(`Reminders cancelled for ${name} — skipping message ${index + 1}`);
+        return;
+      }
       try {
         await sendMessage(phone, msg.text);
-        console.log(`Message ${index + 1} sent to ${name} at ${new Date().toLocaleTimeString()}`);
+        console.log(`Message ${index + 1} sent to ${name}`);
+        if (index === MESSAGES.length - 1) {
+          delete activeClients[key];
+        }
       } catch (err) {
         console.error(`Failed to send message ${index + 1} to ${name}:`, err.message);
       }
     }, msg.delayMs);
+    timers.push(timer);
   });
+
+  activeClients[key] = { name, phone, timers };
 }
 
 app.post('/add-client', (req, res) => {
@@ -60,6 +76,56 @@ app.post('/add-client', (req, res) => {
 
   scheduleReminders(name, phone);
   res.json({ success: true, message: `Reminder sequence started for ${name}.` });
+});
+
+app.post('/cancel-client', (req, res) => {
+  const { name, phone } = req.body;
+
+  if (!name || !phone) {
+    return res.status(400).json({ error: 'Name and phone are required.' });
+  }
+
+  const key = phone.replace(/\D/g, '');
+  const clientData = activeClients[key];
+
+  if (!clientData) {
+    return res.status(404).json({ error: 'No active reminders found for that phone number.' });
+  }
+
+  const nameMatch = clientData.name.toLowerCase().trim() === name.toLowerCase().trim();
+  if (!nameMatch) {
+    return res.status(404).json({ error: 'Name does not match the phone number on file.' });
+  }
+
+  clientData.timers.forEach(t => clearTimeout(t));
+  delete activeClients[key];
+
+  console.log(`Reminders cancelled for ${name} (${phone})`);
+  res.json({ success: true, message: `Reminders cancelled for ${name}.` });
+});
+
+app.get('/active-clients', (req, res) => {
+  const list = Object.values(activeClients).map(c => ({ name: c.name, phone: c.phone }));
+  res.json(list);
+});
+
+app.post('/send-one-time', async (req, res) => {
+  const { phone, message } = req.body;
+
+  if (!phone || !message) {
+    return res.status(400).json({ error: 'Phone and message are required.' });
+  }
+
+  if (!phone.match(/^\+1\d{10}$/)) {
+    return res.status(400).json({ error: 'Phone must be in format +1XXXXXXXXXX.' });
+  }
+
+  try {
+    await sendMessage(phone, message);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to send message. Check your Twilio credentials.' });
+  }
 });
 
 app.post('/incoming', (req, res) => {
