@@ -157,6 +157,24 @@
       <strong>3 messages will be sent:</strong><br>
       Immediately &nbsp;·&nbsp; 4 hours later &nbsp;·&nbsp; 8 hours later
     </div>
+
+    <hr style="border:none;border-top:1px solid #e8ecf0;margin:1.8rem 0;">
+
+    <div class="logo-area" style="margin-bottom:1rem;padding-bottom:0;border-bottom:none;">
+      <h1 style="font-size:1rem;">Send a one-time text</h1>
+      <p>Send a single custom message to any phone number.</p>
+    </div>
+
+    <label for="oneTimePhone">Phone number</label>
+    <input type="tel" id="oneTimePhone" placeholder="+1XXXXXXXXXX" />
+
+    <label for="oneTimeMessage">Message</label>
+    <textarea id="oneTimeMessage" placeholder="Type your message here..." style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid #dce3ea;border-radius:8px;font-size:0.95rem;font-family:inherit;color:#2c3e50;background:#fafbfc;resize:vertical;min-height:90px;"></textarea>
+
+    <button id="oneTimeBtn" onclick="sendOneTime()" style="background:#2c7a4f;margin-top:1.8rem;">Send message</button>
+
+    <div id="oneTimeStatus" class="status"></div>
+
   </div>
 
   <script>
@@ -243,6 +261,50 @@
 
     function showCancelStatus(type, msg) {
       const el = document.getElementById('cancelStatus');
+      el.className = 'status show ' + type;
+      el.textContent = msg;
+    }
+
+    async function sendOneTime() {
+      const phone = document.getElementById('oneTimePhone').value.trim();
+      const message = document.getElementById('oneTimeMessage').value.trim();
+      const btn = document.getElementById('oneTimeBtn');
+      const statusEl = document.getElementById('oneTimeStatus');
+
+      statusEl.className = 'status';
+      statusEl.textContent = '';
+
+      if (!phone.match(/^\+1\d{10}$/)) { showOneTimeStatus('error', 'Phone must be in format +1XXXXXXXXXX.'); return; }
+      if (!message) { showOneTimeStatus('error', 'Please enter a message.'); return; }
+
+      btn.disabled = true;
+      showOneTimeStatus('info', 'Sending...');
+
+      try {
+        const res = await fetch('/send-one-time', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, message })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showOneTimeStatus('success', 'Message sent successfully.');
+          document.getElementById('oneTimePhone').value = '';
+          document.getElementById('oneTimeMessage').value = '';
+        } else {
+          showOneTimeStatus('error', data.error || 'Something went wrong.');
+        }
+      } catch (err) {
+        showOneTimeStatus('error', 'Could not reach the server. Please try again.');
+      }
+
+      btn.disabled = false;
+    }
+
+    function showOneTimeStatus(type, msg) {
+      const el = document.getElementById('oneTimeStatus');
       el.className = 'status show ' + type;
       el.textContent = msg;
     }
