@@ -136,6 +136,23 @@
 
     <div id="status" class="status"></div>
 
+    <hr style="border:none;border-top:1px solid #e8ecf0;margin:1.8rem 0;">
+
+    <div class="logo-area" style="margin-bottom:1rem;padding-bottom:0;border-bottom:none;">
+      <h1 style="font-size:1rem;">Cancel reminders</h1>
+      <p>Enter the client's name and phone number to stop their reminder sequence.</p>
+    </div>
+
+    <label for="cancelName">Client name</label>
+    <input type="text" id="cancelName" placeholder="First Last" />
+
+    <label for="cancelPhone">Phone number</label>
+    <input type="tel" id="cancelPhone" placeholder="+1XXXXXXXXXX" />
+
+    <button id="cancelBtn" onclick="cancelClient()" style="background:#c0392b;">Cancel reminders</button>
+
+    <div id="cancelStatus" class="status"></div>
+
     <div class="sequence-note">
       <strong>3 messages will be sent:</strong><br>
       Immediately &nbsp;·&nbsp; 4 hours later &nbsp;·&nbsp; 8 hours later
@@ -183,6 +200,49 @@
 
     function showStatus(type, msg) {
       const el = document.getElementById('status');
+      el.className = 'status show ' + type;
+      el.textContent = msg;
+    }
+
+    async function cancelClient() {
+      const name = document.getElementById('cancelName').value.trim();
+      const phone = document.getElementById('cancelPhone').value.trim();
+      const btn = document.getElementById('cancelBtn');
+      const statusEl = document.getElementById('cancelStatus');
+
+      statusEl.className = 'status';
+      statusEl.textContent = '';
+
+      if (!name) { showCancelStatus('error', 'Please enter a client name.'); return; }
+      if (!phone.match(/^\+1\d{10}$/)) { showCancelStatus('error', 'Phone must be in format +1XXXXXXXXXX.'); return; }
+
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/cancel-client', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showCancelStatus('success', `Reminders cancelled for ${name}.`);
+          document.getElementById('cancelName').value = '';
+          document.getElementById('cancelPhone').value = '';
+        } else {
+          showCancelStatus('error', data.error || 'Something went wrong.');
+        }
+      } catch (err) {
+        showCancelStatus('error', 'Could not reach the server. Please try again.');
+      }
+
+      btn.disabled = false;
+    }
+
+    function showCancelStatus(type, msg) {
+      const el = document.getElementById('cancelStatus');
       el.className = 'status show ' + type;
       el.textContent = msg;
     }
