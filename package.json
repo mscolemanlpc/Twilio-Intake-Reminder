@@ -1,0 +1,14 @@
+{
+  "name": "twilio-intake-reminder",
+  "version": "1.0.0",
+  "description": "Intake reminder text sequence for The Family Institute of Arkansas",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "express": "^4.18.0",
+    "twilio": "^4.0.0"
+  }
+}

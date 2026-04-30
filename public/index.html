@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intake Reminder Tool — The Family Institute of Arkansas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #f4f6f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      color: #2c3e50;
+    }
+
+    .container {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    .logo-area {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #e8ecf0;
+    }
+
+    .logo-area h1 {
+      font-size: 1.1rem;
+      font-weight: normal;
+      color: #4a6fa5;
+      letter-spacing: 0.02em;
+    }
+
+    .logo-area p {
+      font-size: 0.8rem;
+      color: #8a9bb0;
+      margin-top: 4px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #8a9bb0;
+      margin-bottom: 6px;
+      margin-top: 1.2rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #dce3ea;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: #2c3e50;
+      background: #fafbfc;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #4a6fa5;
+      background: #fff;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 1.8rem;
+      padding: 12px;
+      background: #4a6fa5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #3a5f95; }
+    button:disabled { background: #a0b4cc; cursor: not-allowed; }
+
+    .status {
+      margin-top: 1rem;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      display: none;
+    }
+
+    .status.show { display: block; }
+    .status.success { background: #eaf7f0; color: #2d7a4f; }
+    .status.error { background: #fdecea; color: #c0392b; }
+    .status.info { background: #eaf0fa; color: #2c5f9e; }
+
+    .sequence-note {
+      margin-top: 1.5rem;
+      padding: 12px 14px;
+      background: #f4f6f8;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: #6b7f96;
+      line-height: 1.6;
+    }
+
+    .sequence-note strong { color: #4a6fa5; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-area">
+      <h1>The Family Institute of Arkansas</h1>
+      <p>New client intake reminder tool</p>
+    </div>
+
+    <label for="clientName">Client name</label>
+    <input type="text" id="clientName" placeholder="First Last" />
+
+    <label for="clientPhone">Phone number</label>
+    <input type="tel" id="clientPhone" placeholder="+1XXXXXXXXXX" />
+
+    <button id="submitBtn" onclick="addClient()">Send intake reminder sequence</button>
+
+    <div id="status" class="status"></div>
+
+    <div class="sequence-note">
+      <strong>3 messages will be sent:</strong><br>
+      Immediately &nbsp;·&nbsp; 4 hours later &nbsp;·&nbsp; 8 hours later
+    </div>
+  </div>
+
+  <script>
+    async function addClient() {
+      const name = document.getElementById('clientName').value.trim();
+      const phone = document.getElementById('clientPhone').value.trim();
+      const btn = document.getElementById('submitBtn');
+      const statusEl = document.getElementById('status');
+
+      statusEl.className = 'status';
+      statusEl.textContent = '';
+
+      if (!name) { showStatus('error', 'Please enter a client name.'); return; }
+      if (!phone.match(/^\+1\d{10}$/)) { showStatus('error', 'Phone must be in format +1XXXXXXXXXX.'); return; }
+
+      btn.disabled = true;
+      showStatus('info', 'Sending first message...');
+
+      try {
+        const res = await fetch('/add-client', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showStatus('success', `Reminder sequence started for ${name}. Messages will send at 0, 4, and 8 hours.`);
+          document.getElementById('clientName').value = '';
+          document.getElementById('clientPhone').value = '';
+        } else {
+          showStatus('error', data.error || 'Something went wrong.');
+        }
+      } catch (err) {
+        showStatus('error', 'Could not reach the server. Please try again.');
+      }
+
+      btn.disabled = false;
+    }
+
+    function showStatus(type, msg) {
+      const el = document.getElementById('status');
+      el.className = 'status show ' + type;
+      el.textContent = msg;
+    }
+  </script>
+</body>
+</html>
